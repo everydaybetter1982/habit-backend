@@ -1,3 +1,5 @@
+// Triggering Vercel deploy
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -11,7 +13,7 @@ export default async function handler(req, res) {
   // 1. Try Google Gemini First
   try {
     const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -22,6 +24,7 @@ export default async function handler(req, res) {
         }),
       }
     );
+
     const geminiData = await geminiRes.json();
     if (geminiRes.ok && !geminiData.error) {
       const reply = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -43,15 +46,16 @@ export default async function handler(req, res) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
       },
       body: JSON.stringify({
         model: 'llama-3.3-70b-versatile',
         messages: groqMessages,
         max_tokens: 150,
-        temperature: 0.7,
-      }),
+        temperature: 0.7
+      })
     });
+
     const groqData = await groqRes.json();
     if (groqRes.ok && groqData.choices?.[0]?.message?.content) {
       return res.status(200).json({ reply: groqData.choices[0].message.content, provider: 'groq-fallback' });
@@ -59,8 +63,8 @@ export default async function handler(req, res) {
   } catch (e) {}
 
   // 3. Ultimate Safety Net
-  return res.status(200).json({ 
-    reply: "I hear you. Let's take a slow, deep breath and focus on just one tiny, zero-pressure step together.", 
-    provider: 'local-fallback' 
+  return res.status(200).json({
+    reply: "I hear you. Let's take a slow, deep breath and focus on just one tiny, zero-pressure step together.",
+    provider: 'local-fallback'
   });
 }
